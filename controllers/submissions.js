@@ -1,19 +1,29 @@
 const Submission = require("../models/submission"),
   taskList = require("../TaskList.json");
+const { DateTime } = require("luxon");
 
 exports.submissions = async function(req, res) {
+  if (!req.user.type || req.user.type != "admin") 
+    return res.status(403).send({err_msg: "您不是管理员"});
   let filter = {
-    checkpointgroup: req.body.checkpointgroups,
     state: req.body.states
   };
+  if (req.body.checkpointgroups && req.body.checkpointgroups.length)
+    checkpointgroup = req.body.checkpointgroups;
   if (req.body.checkpoints && req.body.checkpoints.length)
     filter.checkpointid = req.body.checkpoints;
   if (req.body.uids && req.body.uids.length)
     filter.uid = req.body.uids;
-  return res.json(await Submission.find(filter).exec());
+  console.log(filter);
+  const subs = await Submission.find(filter).lean().exec();
+  for (let i = 0; i < subs.length; i++)
+    subs[i].uploaded_time = DateTime.fromJSDate(subs[i].uploaded).toISO({ includeOffset: false }).replace('T', ' ');
+  return res.json(subs);
 }
 
 exports.edit_submission = async function(req, res) {
+  if (!req.user.type || req.user.type != "admin") 
+    return res.status(403).send({err_msg: "您不是管理员"});
   let sub = await Submission.findOne({id: req.body.id}).exec();
   sub.state = req.body.state;
   if (req.body.bonus)
@@ -32,4 +42,5 @@ exports.edit_submission = async function(req, res) {
     await related[i].save();
   }
   io.emit('update', sub.checkpointid);
+  res.send({message: "success"});
 }

@@ -1,6 +1,7 @@
 const express = require("express"),
       router = express.Router();
-import { authenticateToken as auth } from "../auth";
+const { authenticateToken } = require("../auth"),
+      auth = authenticateToken;
 
 const checkpoints = require("../controllers/checkpoints"),
       submissions = require("../controllers/submissions"),
@@ -10,7 +11,7 @@ router.get("/checkpoints", auth, checkpoints.checkpoints);
 
 router.get("/checkpoint/:id", auth, checkpoints.checkpoint);
 
-router.post("/submit/:checkpointid", auth, checkpoints.submit);
+router.post("/submit", auth, checkpoints.submit);
 
 router.post("/submissions/query", auth, submissions.submissions);
 

@@ -1,8 +1,8 @@
 const User = require("../models/user");
-import generateAccessToken from "../auth";
+const {generateAccessToken} = require("../auth");
 
 exports.login = async function (req, res) {
-  const user = User.findOne({uid: req.body.uid, password: req.body.password});
+  const user = await User.findOne({uid: req.body.uid, password: req.body.password}).exec();
   if (user) {
     token = generateAccessToken(user.uid);
     res.json({ uid: user.uid, type: user.type, token });
@@ -12,7 +12,7 @@ exports.login = async function (req, res) {
 }
 
 exports.changepassword = async function (req, res) {
-  let user = User.findOne({uid: req.body.uid, password: req.body.old_password});
+  let user = await User.findOne({uid: req.body.uid, password: req.body.old_password}).exec();
   if (user) {
     user.password = req.body.new_password;
     user.save();

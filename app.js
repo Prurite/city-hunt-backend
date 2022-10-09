@@ -6,8 +6,11 @@ const express = require('express'),
       path = require('path'),
       helmet = require('helmet'),
       jwt = require('jsonwebtoken'),
-      mongoose = require('mongoose');
+      mongoose = require('mongoose'),
+      createError = require('http-errors');
 const config = require("./config.json");
+const router = require("./routes/router");
+
 global.io = require('socket.io')(http);
 
 mongoose.connect(config.db_url, {useNewUrlParser: true, useUnifiedTopology: true});
@@ -23,15 +26,16 @@ app.use(fileUpload());
 
 app.use('/', router);
 
-app.use((req, res, next) => {
-  next(createError(404));
-});
+/* app.use((err, req, res, next) => {
+  if (!err)
+    next(createError(404));
+}); */
 
 app.use((err, req, res, next) => {
   res.locals.message = err.message;
   res.locals.error = config.dev ? err : {};
   res.status(err.status || 500);
-  res.send(err);
+  res.send(err.toString());
 });
 
 var port = parseInt(config.port);
