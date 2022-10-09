@@ -1,0 +1,29 @@
+[
+    {
+        "id": "U12210101-P1-1",
+        "checkpoint": "1-1",
+        "user": "12210101",
+        "photo": "U12210101-P1-1.jpg",
+        "state": "pending",
+        "uploaded_time": "2022-10-06T18:43:05"
+    },
+    {
+        "id": "U12210101-P1-2",
+        "checkpoint": "1-2",
+        "user": "12210101",
+        "photo": "U12210101-P1-1.jpg",
+        "state": "accepted",
+        "uploaded_time": "",
+        "score": 6,
+        "bonus": 2
+    },
+    {
+        "id": "U12210201-P1-2",
+        "checkpoint": "1-2",
+        "user": "12210201",
+        "photo": "U12210201-P1-1.jpg",
+        "state": "denied",
+        "uploaded_time": "",
+        "fail_reason": "不符合要求"
+    }
+]
