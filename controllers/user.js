@@ -12,7 +12,11 @@ exports.login = async function (req, res) {
 }
 
 exports.changepassword = async function (req, res) {
-  let user = await User.findOne({uid: req.body.uid, password: req.body.old_password}).exec();
+  let user;
+  if (req.user && req.user.type === "admin")
+    user = await User.findOne({uid: req.body.uid}).exec();
+  else
+    user = await User.findOne({uid: req.body.uid, password: req.body.old_password}).exec();
   if (user) {
     user.password = req.body.new_password;
     user.save();

@@ -1,30 +1,29 @@
-const express = require('express'),
+const express = require("express"),
       app = express(),
-      http = require('http').Server(app),
-      fileUpload = require('express-fileupload'),
-      logger = require('morgan'),
-      path = require('path'),
-      helmet = require('helmet'),
-      jwt = require('jsonwebtoken'),
-      mongoose = require('mongoose'),
-      createError = require('http-errors');
+      http = require("http").Server(app),
+      fileUpload = require("express-fileupload"),
+      logger = require("morgan"),
+      helmet = require("helmet"),
+      path = require("path"),
+      mongoose = require("mongoose");
 const config = require("./config.json");
 const router = require("./routes/router");
 
-global.io = require('socket.io')(http);
+global.io = require("socket.io")(http);
 
 mongoose.connect(config.db_url, {useNewUrlParser: true, useUnifiedTopology: true});
 mongoose.Promise = global.Promise;
 var db = mongoose.connection;
-db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+db.on("error", console.error.bind(console, "MongoDB connection error:"));
 
-app.use(logger(config.dev ? 'dev' : 'tiny'));
+app.use(logger(config.dev ? "dev" : "tiny"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(helmet());
 app.use(fileUpload());
 
-app.use('/', router);
+app.use("/", router);
+app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
 
 /* app.use((err, req, res, next) => {
   if (!err)

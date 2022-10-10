@@ -1,11 +1,8 @@
-const { isObject } = require("formik");
 const Submission = require("../models/submission"),
-      config = require("../config.json"),
       taskList = require("../TaskList.json");
 
 exports.checkpoints = async function (req, res) {
   const cur = await Submission.find({uid: req.user.uid}).exec();
-  console.log(cur);
   let checkpoints = taskList;
   for (let i of cur)
     for (let i0 = 0; i0 < checkpoints.length; i0++)
@@ -57,9 +54,11 @@ exports.submit = async function (req, res) {
   const photo = req.files.photo,
     ext = photo.name.match(/\.([^\.]+)$/)[1],
     id = `U${req.user.uid}-P${checkpointid}`,
-    photoName = id + '.' + ext;
-  if (ext != "jpg" && ext != "png")
-    return res.status(400).send({ err_msg: "无效的文件类型" });
+    now = new Date().toISOString(),
+    photoName = id + '-' + now + '.' + ext;
+  console.log(now);
+  if (ext != "jpg" && ext != "jpeg")
+    return res.status(400).send({ err_msg: "无效的文件类型 " + ext });
   if (photo.size > 10 * 1048576)
     return res.status(400).send({ err_msg: "文件大小超过 10MB" });
   photo.mv("./uploads/" + photoName);

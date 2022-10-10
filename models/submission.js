@@ -9,7 +9,7 @@ var SubmissionSchema = new Schema({
   checkpointid: {type: String, required: true },
   uid: {type: String, required: true },
   photo: {type: String, required: true },
-  uploaded: {type: Date, default: Date.now(), required: true },
+  uploaded: {type: Date, default: Date(), required: true },
   state: {type: String, enum:["pending", "accepted", "denied"], required: true },
   score: Number,
   bonus: Number,
@@ -17,7 +17,7 @@ var SubmissionSchema = new Schema({
 })
 
 SubmissionSchema.virtual("uploaded_time").get(function () {
-  return DateTime.fromJSDate(this.uploaded).toISO({ includeOffset: false }).replace('T', ' ');
+  return DateTime.fromJSDate(this.uploaded).toISO({ includeOffset: false }).replace("T", " ");
 })
 
 module.exports = mongoose.model("Submission", SubmissionSchema);

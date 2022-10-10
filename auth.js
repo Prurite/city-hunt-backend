@@ -1,4 +1,4 @@
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 const config = require("./config.json");
 const User = require("./models/user");
 
@@ -7,12 +7,11 @@ exports.generateAccessToken = function (uid) {
 }
 
 exports.authenticateToken = function (req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
   if (!token)
     return res.status(401).json({err_msg: "请登录"});
   jwt.verify(token, config.secret, (err, data) => {
-    console.log(err);
     if (err)
       return res.status(403).json({err_msg: "无效的 token，请重新登录"});
     req.user = {};

@@ -3,8 +3,6 @@ const Submission = require("../models/submission"),
 const { DateTime } = require("luxon");
 
 exports.submissions = async function(req, res) {
-  if (!req.user.type || req.user.type != "admin") 
-    return res.status(403).send({err_msg: "您不是管理员"});
   let filter = {
     state: req.body.states
   };
@@ -14,16 +12,15 @@ exports.submissions = async function(req, res) {
     filter.checkpointid = req.body.checkpoints;
   if (req.body.uids && req.body.uids.length)
     filter.uid = req.body.uids;
+  console.log("Submission filter:");
   console.log(filter);
   const subs = await Submission.find(filter).lean().exec();
   for (let i = 0; i < subs.length; i++)
-    subs[i].uploaded_time = DateTime.fromJSDate(subs[i].uploaded).toISO({ includeOffset: false }).replace('T', ' ');
+    subs[i].uploaded_time = DateTime.fromJSDate(subs[i].uploaded).toISO({ includeOffset: false }).replace("T", " ");
   return res.json(subs);
 }
 
 exports.edit_submission = async function(req, res) {
-  if (!req.user.type || req.user.type != "admin") 
-    return res.status(403).send({err_msg: "您不是管理员"});
   let sub = await Submission.findOne({id: req.body.id}).exec();
   sub.state = req.body.state;
   if (req.body.bonus)
@@ -31,7 +28,7 @@ exports.edit_submission = async function(req, res) {
   if (req.body.fail_reason)
     sub.fail_reason = req.body.fail_reason;
   await sub.save();
-  let related = await Submission.find({checkpointid: sub.checkpointid, state: "accepted"}).sort('uploaded').exec();
+  let related = await Submission.find({checkpointid: sub.checkpointid, state: "accepted"}).sort("uploaded").exec();
   let scores;
   for (let i of taskList)
     for (let j of i.points)
@@ -41,6 +38,6 @@ exports.edit_submission = async function(req, res) {
     related[i].score = i < scores.length ? scores[i] : scores[scores.length - 1];
     await related[i].save();
   }
-  io.emit('update', sub.checkpointid);
+  io.emit("update", sub.checkpointid);
   res.send({message: "success"});
 }

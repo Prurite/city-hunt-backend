@@ -1,7 +1,7 @@
-const app = require('express')(),
-      http = require('http').Server(app),
-      io = require('socket.io')(http),
-      fileUpload = require('express-fileupload');
+const app = require("express")(),
+      http = require("http").Server(app),
+      io = require("socket.io")(http),
+      fileUpload = require("express-fileupload");
 
 const config = require("./config.json");
 let newPoints = {};
@@ -13,18 +13,18 @@ let newPoints = {};
 }); */
 
 app.use(fileUpload({ createParentPath: true }));
-app.use(require('express').json());
+app.use(require("express").json());
 
-app.get('/', (req, res) => {
-  // res.sendFile(__dirname + '/index.html');
+app.get("/", (req, res) => {
+  // res.sendFile(__dirname + "/index.html");
   res.send("Hello");
 });
 
-io.on('connection', (socket) => {
+io.on("connection", (socket) => {
   console.log("a user connected");
 });
 
-app.get('/update/:id/:state', (req, res) => {
+app.get("/update/:id/:state", (req, res) => {
   const id = req.params.id, state = req.params.state;
   const list = require("./TaskList_example.json");
   for (const i of list)
@@ -32,31 +32,32 @@ app.get('/update/:id/:state', (req, res) => {
       if (j.id === id) {
         j.state = state != "null" ? state : null;
         newPoints[j.id] = j;
-        io.emit('update', j.id);
+        io.emit("update", j.id);
         res.json(j);
         return;
       }
   res.send("not found");
 })
 
-app.get('/checkpoint/:id', (req, res) => {
+app.get("/checkpoint/:id", (req, res) => {
   res.json(newPoints[req.params.id]);
 })
 
-app.get('/checkpoints', (req, res) => {
+app.get("/checkpoints", (req, res) => {
   res.json(require("./TaskList_example.json"));
 });
 
-app.post('/submissions/query', (req, res) => {
+app.post("/submissions/query", (req, res) => {
   res.json(require("./SubList.json"));
 })
 
-app.post('/submissions/modify', (req, res) => {
+app.post("/submissions/modify", (req, res) => {
+  console.log("/submission/modify:");
   console.log(req.body);
   res.send("OK");
 })
 
-app.post('/login', (req, res) => {
+app.post("/login", (req, res) => {
   if (req.body.uid !== "1")
     // res.json({err_msg: "密码错误"});
     res.status(403).json({err_msg: "密码错误"});
@@ -64,14 +65,14 @@ app.post('/login', (req, res) => {
     res.json({ uid: "1", token: "token", type: "admin" });
 });
 
-app.post('/changepassword', (req, res) => {
+app.post("/changepassword", (req, res) => {
   if (req.body.old_password !== "123")
     res.status(403).json({err_msg: "密码错误"});
   else
     res.json({ message: "success" });
 });
 
-app.post('/submit/:id', async (req, res) => {
+app.post("/submit/:id", async (req, res) => {
   try {
     if (!req.files)
       res.send({status: false, message: "No file uploaded"});
@@ -81,7 +82,7 @@ app.post('/submit/:id', async (req, res) => {
       let id = req.params.id;
       let file = req.files.photo;
       console.log(id + " " + file.name);
-      file.mv('./uploads/' + id + '.' + file.name.split('.')[1]);
+      file.mv("./uploads/" + id + "." + file.name.split(".")[1]);
       res.send({status: true, message: "Uploaded"});
     }
   } catch (err) {
