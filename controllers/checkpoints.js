@@ -19,7 +19,7 @@ exports.checkpoints = async function (req, res) {
   let queries = [], points = [];
   for (let i = 0; i < checkpoints.length; i++)
     for (let j = 0; j < checkpoints[i].points.length; j++)
-        queries.push(Submission.countDocuments({checkpointid: `${i+1}-${j+1}`, state: "accepted"})),
+        queries.push(Submission.countDocuments({checkpointid: checkpoints[i].points[j].id, state: "accepted"})),
         points.push({i, j});
   let counts = await Promise.all(queries);
   for (let i = 0; i < queries.length; i++)
