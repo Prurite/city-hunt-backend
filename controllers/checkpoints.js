@@ -69,6 +69,7 @@ exports.submit = async function (req, res) {
     checkpointgroup: checkpointid.split('-')[0],
     checkpointid: checkpointid,
     photo: photoName,
+    uploaded: new Date(),
     state: "pending"
   });
   io.emit('update', checkpointid);

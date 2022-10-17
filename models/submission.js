@@ -9,7 +9,7 @@ var SubmissionSchema = new Schema({
   checkpointid: {type: String, required: true },
   uid: {type: String, required: true },
   photo: {type: String, required: true },
-  uploaded: {type: Date, default: Date(), required: true },
+  uploaded: {type: Date, required: true },
   state: {type: String, enum:["pending", "accepted", "denied"], required: true },
   score: Number,
   bonus: Number,
