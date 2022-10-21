@@ -18,6 +18,8 @@ exports.changepassword = async function (req, res) {
   else
     user = await User.findOne({uid: req.body.uid, password: req.body.old_password}).exec();
   if (user) {
+    if (req.body.new_password.length < 8)
+      return res.status(400).send({err_msg: "密码过短"});
     user.password = req.body.new_password;
     user.save();
     res.send({message: "success"});

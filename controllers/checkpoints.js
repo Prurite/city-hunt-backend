@@ -3,7 +3,7 @@ const Submission = require("../models/submission"),
 
 exports.checkpoints = async function (req, res) {
   const cur = await Submission.find({uid: req.user.uid}).exec();
-  let checkpoints = taskList;
+  let checkpoints = JSON.parse(JSON.stringify(taskList));
   for (let i of cur)
     for (let i0 = 0; i0 < checkpoints.length; i0++)
       for (let i1 = 0; i1 < checkpoints[i0].points.length; i1++)
@@ -28,11 +28,11 @@ exports.checkpoints = async function (req, res) {
 }
 
 exports.checkpoint = async function (req, res) {
-  let checkpoint;
+  let checkpoint = {};
   for (let i of taskList)
     for (let j of i.points)
       if (j.id === req.params.id)
-        checkpoint = j;
+        checkpoint = JSON.parse(JSON.stringify(j));
   const cur = await Submission.findOne({uid: req.user.uid, checkpointid: req.params.id}).exec();
   if (cur) {
     checkpoint.state = cur.state;

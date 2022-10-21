@@ -13,7 +13,7 @@ exports.authenticateToken = function (req, res, next) {
     return res.status(401).json({err_msg: "请登录"});
   jwt.verify(token, config.secret, (err, data) => {
     if (err)
-      return res.status(403).json({err_msg: "无效的 token，请重新登录"});
+      return res.status(403).json({err_msg: "无效或已过期的 token，请退出后重新登录"});
     req.user = {};
     req.user.uid = data.uid;
     User.findOne({ uid: data.uid }, (err, user) => {
