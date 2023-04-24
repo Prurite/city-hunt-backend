@@ -63,13 +63,14 @@ exports.submit = async function (req, res) {
     return res.status(400).send({ err_msg: "文件大小超过 10MB" });
   photo.mv("./uploads/" + photoName);
   await Submission.deleteMany({ id: id });
+  const now_date = new Date();
   await Submission.create({
     id: id,
     uid: req.user.uid,
     checkpointgroup: checkpointid.split('-')[0],
     checkpointid: checkpointid,
     photo: photoName,
-    uploaded: new Date(),
+    uploaded: now_date,
     state: "pending"
   });
   io.emit('update', checkpointid);
