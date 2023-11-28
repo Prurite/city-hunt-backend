@@ -2,7 +2,7 @@ const User = require("../models/user");
 const {generateAccessToken} = require("../auth");
 
 exports.login = async function (req, res) {
-  const user = await User.findOne({uid: req.body.uid, password: req.body.password}).exec();
+  const user = await User.findOne({uid: req.body.uid, password: req.body.password});
   if (user) {
     token = generateAccessToken(user.uid);
     res.json({ uid: user.uid, type: user.type, token });
@@ -14,9 +14,9 @@ exports.login = async function (req, res) {
 exports.changepassword = async function (req, res) {
   let user;
   if (req.user && req.user.type === "admin")
-    user = await User.findOne({uid: req.body.uid}).exec();
+    user = await User.findOne({uid: req.body.uid});
   else
-    user = await User.findOne({uid: req.body.uid, password: req.body.old_password}).exec();
+    user = await User.findOne({uid: req.body.uid, password: req.body.old_password});
   if (user) {
     if (req.body.new_password.length < 8)
       return res.status(400).send({err_msg: "密码过短"});

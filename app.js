@@ -11,7 +11,7 @@ const router = require("./routes/router");
 
 global.io = require("socket.io")(http);
 
-mongoose.connect(config.db_url, {useNewUrlParser: true, useUnifiedTopology: true});
+mongoose.connect(config.db_url);
 mongoose.Promise = global.Promise;
 var db = mongoose.connection;
 db.on("error", console.error.bind(console, "MongoDB connection error:"));

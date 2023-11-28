@@ -6,7 +6,8 @@ const { authenticateToken } = require("../auth"),
 
 const checkpoints = require("../controllers/checkpoints"),
       submissions = require("../controllers/submissions"),
-      user = require("../controllers/user");
+      user = require("../controllers/user"),
+      alerts = require("../controllers/alerts");
 
 function authAdmin(req, res, next) {
   if (!req.user.type || req.user.type != "admin") 
@@ -27,5 +28,9 @@ router.post("/submission/modify", [auth, authAdmin], submissions.edit_submission
 router.post("/login", user.login);
 
 router.post("/changepassword", user.changepassword);
+
+router.get("/alerts", auth, alerts.alerts);
+
+router.post("/alert/delete", auth, alerts.delete);
 
 module.exports = router;

@@ -1,8 +1,9 @@
 const Submission = require("../models/submission"),
+      Alert = require("../models/alert"),
       taskList = require("../TaskList.json");
 
 exports.checkpoints = async function (req, res) {
-  const cur = await Submission.find({uid: req.user.uid}).exec();
+  const cur = await Submission.find({uid: req.user.uid});
   let checkpoints = JSON.parse(JSON.stringify(taskList));
   for (let i of cur)
     for (let i0 = 0; i0 < checkpoints.length; i0++)
@@ -33,7 +34,7 @@ exports.checkpoint = async function (req, res) {
     for (let j of i.points)
       if (j.id === req.params.id)
         checkpoint = JSON.parse(JSON.stringify(j));
-  const cur = await Submission.findOne({uid: req.user.uid, checkpointid: req.params.id}).exec();
+  const cur = await Submission.findOne({uid: req.user.uid, checkpointid: req.params.id});
   if (cur) {
     checkpoint.state = cur.state;
     checkpoint.uploaded_time = cur.uploaded_time;
@@ -43,7 +44,7 @@ exports.checkpoint = async function (req, res) {
       checkpoint.score = cur.score + (cur.bonus ? `(+${cur.bonus})` : null);
   }
   checkpoint.passed =
-    await Submission.countDocuments({checkpointid: req.params.id, state: "accepted"}).exec();
+    await Submission.countDocuments({checkpointid: req.params.id, state: "accepted"});
   res.json(checkpoint);
 }
 
@@ -72,6 +73,12 @@ exports.submit = async function (req, res) {
     photo: photoName,
     uploaded: now_date,
     state: "pending"
+  });
+  // Create an alert for the user about the checkpoint status change: photo uploaded
+  await Alert.create({
+    uid: req.user.uid,
+    date: now_date,
+    content: `您在打卡点 ${checkpointid} 的照片已上传，正在等待审核`
   });
   io.emit('update', checkpointid);
   res.send({message: "success"});

@@ -16,11 +16,16 @@ exports.authenticateToken = function (req, res, next) {
       return res.status(403).json({err_msg: "无效或已过期的 token，请退出后重新登录"});
     req.user = {};
     req.user.uid = data.uid;
-    User.findOne({ uid: data.uid }, (err, user) => {
-      if (err)
-        return res.status(500).send(err);
-      req.user.type = user.type;
-      next();
-    })
-  });
+    User.findOne({ uid: data.uid })
+      .then(user => {
+        if (!user)
+          return res.status(403).json({err_msg: "用户不存在"});
+        req.user = user;
+        next();
+      })
+      .catch(err => {
+        console.log(err);
+        return res.status(500).json({err_msg: "服务器错误"});
+      });
+    });
 }
