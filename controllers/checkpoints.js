@@ -2,68 +2,109 @@ const Submission = require("../models/submission"),
       Alert = require("../models/alert"),
       taskList = require("../TaskList.json");
 
+// Returns the list of checkpoints with submissions merged in
 exports.checkpoints = async function (req, res) {
-  const cur = await Submission.find({uid: req.user.uid});
-  let checkpoints = JSON.parse(JSON.stringify(taskList));
-  for (let i of cur)
-    for (let i0 = 0; i0 < checkpoints.length; i0++)
-      for (let i1 = 0; i1 < checkpoints[i0].points.length; i1++)
-        if (checkpoints[i0].points[i1].id === i.checkpointid) {
-          checkpoints[i0].points[i1].state = i.state;
-          checkpoints[i0].points[i1].uploaded_time = i.uploaded_time;
-          checkpoints[i0].points[i1].photo = i.photo;
-          checkpoints[i0].points[i1].fail_reason = i.fail_reason;
-          if (i.score)
-            checkpoints[i0].points[i1].score = i.score +
-              (i.bonus ? `(+${i.bonus})` : null);
-        }
-  let queries = [], points = [];
-  for (let i = 0; i < checkpoints.length; i++)
-    for (let j = 0; j < checkpoints[i].points.length; j++)
-        queries.push(Submission.countDocuments({checkpointid: checkpoints[i].points[j].id, state: "accepted"})),
-        points.push({i, j});
-  let counts = await Promise.all(queries);
-  for (let i = 0; i < queries.length; i++)
-    checkpoints[points[i].i].points[points[i].j].passed = counts[i];
-  res.json(checkpoints);
+  // Get all submissions of the user
+  const userSubmissions = await Submission.find({ uid: req.user.uid });
+
+  // Merge submissions into the tasklist
+  const updatedCheckpoints = taskList.map(checkpoint => {
+    checkpoint.points = checkpoint.points.map(point => {
+      const submission = userSubmissions.find(sub => sub.checkpointid === point.id);
+      if (submission) {
+        point.state = submission.state;
+        point.uploaded_time = submission.uploaded_time;
+        point.photo = submission.photo;
+        point.fail_reason = submission.fail_reason;
+        if (submission.score)
+          point.score = submission.score + (submission.bonus ? `(+${submission.bonus})` : '');
+      }
+      return point;
+    });
+    return checkpoint;
+  });
+
+  // Count the number of accepted submissions for each checkpoint
+  const queries = updatedCheckpoints.map(checkpoint =>
+    checkpoint.points.map(point =>
+      Submission.countDocuments({ checkpointid: point.id, state: 'accepted' })
+    )
+  );
+  const counts = await Promise.all(queries.flat());
+
+  // Merge the counts into the tasklist
+  updatedCheckpoints.forEach((checkpoint, i) => {
+    checkpoint.points.forEach((point, j) => {
+      point.passed = counts[i * checkpoint.points.length + j];
+    });
+  });
+
+  res.json(updatedCheckpoints);
 }
 
+// Returns a single checkpoint with submission merged in
 exports.checkpoint = async function (req, res) {
-  let checkpoint = {};
-  for (let i of taskList)
-    for (let j of i.points)
-      if (j.id === req.params.id)
-        checkpoint = JSON.parse(JSON.stringify(j));
-  const cur = await Submission.findOne({uid: req.user.uid, checkpointid: req.params.id});
-  if (cur) {
-    checkpoint.state = cur.state;
-    checkpoint.uploaded_time = cur.uploaded_time;
-    checkpoint.photo = cur.photo;
-    checkpoint.fail_reason = cur.fail_reason;
-    if (cur.score)
-      checkpoint.score = cur.score + (cur.bonus ? `(+${cur.bonus})` : null);
+  // Find the requested checkpoint
+  const checkpointId = req.params.id;
+  const checkpoint = taskList.flatMap(checklist => checklist.points)
+    .find(point => point.id === checkpointId);
+  if (!checkpoint) {
+    res.status(404).json({ error: 'Checkpoint not found' });
+    return;
   }
-  checkpoint.passed =
-    await Submission.countDocuments({checkpointid: req.params.id, state: "accepted"});
+
+  // Merge the submission in
+  const userSubmission = await Submission.findOne({
+    uid: req.user.uid,
+    checkpointid: req.params.id
+  });
+  if (userSubmission) {
+    checkpoint.state = userSubmission.state;
+    checkpoint.uploaded_time = userSubmission.uploaded_time;
+    checkpoint.photo = userSubmission.photo;
+    checkpoint.fail_reason = userSubmission.fail_reason;
+    if (userSubmission.score)
+      checkpoint.score = userSubmission.score + (userSubmission.bonus ? `(+${userSubmission.bonus})` : null);
+  }
+
+  // Count the accepted submissions
+  checkpoint.passed = await Submission.countDocuments({
+    checkpointid: req.params.id,
+    state: "accepted"
+  });
+
   res.json(checkpoint);
 }
 
 exports.submit = async function (req, res) {
   const checkpointid = req.body.checkpointid;
+
+  // Check if the photo is included in the request
   if (!req.files || !req.files.photo)
     return res.status(400).send({ err_msg: "未上传有效文件" });
+
+  // Extract photo information and generate a unique filename
   const photo = req.files.photo,
     ext = photo.name.match(/\.([^\.]+)$/)[1],
     id = `U${req.user.uid}-P${checkpointid}`,
     now = new Date().toISOString(),
     photoName = id + '-' + now + '.' + ext;
+
   console.log(now);
+
+  // Check if the photo is valid
   if (ext != "jpg" && ext != "jpeg")
     return res.status(400).send({ err_msg: "无效的文件类型 " + ext });
   if (photo.size > 10 * 1048576)
     return res.status(400).send({ err_msg: "文件大小超过 10MB" });
+
+  // Move the uploaded photo to the uploads folder
   photo.mv("./uploads/" + photoName);
+
+  // Delete any existing submissions with the same ID
   await Submission.deleteMany({ id: id });
+
+  // Create a new submission record
   const now_date = new Date();
   await Submission.create({
     id: id,
@@ -74,6 +115,7 @@ exports.submit = async function (req, res) {
     uploaded: now_date,
     state: "pending"
   });
+
   // Create an alert for the user about the checkpoint status change: photo uploaded
   await Alert.create({
     uid: req.user.uid,
@@ -81,5 +123,6 @@ exports.submit = async function (req, res) {
     content: `您在打卡点 ${checkpointid} 的照片已上传，正在等待审核`
   });
   io.emit('update', checkpointid);
+
   res.send({message: "success"});
 }
