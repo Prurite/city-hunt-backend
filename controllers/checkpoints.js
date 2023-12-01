@@ -25,20 +25,18 @@ exports.checkpoints = async function (req, res) {
   });
 
   // Count the number of accepted submissions for each checkpoint
-  const queries = updatedCheckpoints.map(checkpoint =>
-    checkpoint.points.map(point =>
-      Submission.countDocuments({ checkpointid: point.id, state: 'accepted' })
-    )
-  );
-  const counts = await Promise.all(queries.flat());
-
-  // Merge the counts into the tasklist
-  updatedCheckpoints.forEach((checkpoint, i) => {
-    checkpoint.points.forEach((point, j) => {
-      point.passed = counts[i * checkpoint.points.length + j];
-    });
+  // and merge the count into checkpoint by the exact point id
+  const acceptedSubmissions = await Submission.aggregate([
+    { $match: { state: "accepted" } },
+    { $group: { _id: "$checkpointid", count: { $sum: 1 } } }
+  ]);
+  acceptedSubmissions.forEach(sub => {
+    const checkpoint = updatedCheckpoints.flatMap(checklist => checklist.points)
+      .find(point => point.id === sub._id);
+    if (checkpoint)
+      checkpoint.passed = sub.count;
   });
-
+  
   res.json(updatedCheckpoints);
 }
 
