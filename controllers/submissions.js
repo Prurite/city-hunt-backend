@@ -8,7 +8,7 @@ exports.submissions = async function(req, res) {
     state: req.body.states
   };
   if (req.body.checkpointgroups && req.body.checkpointgroups.length)
-    checkpointgroup = req.body.checkpointgroups;
+    filter.checkpointgroup = req.body.checkpointgroups;
   if (req.body.checkpoints && req.body.checkpoints.length)
     filter.checkpointid = req.body.checkpoints;
   if (req.body.uids && req.body.uids.length)
