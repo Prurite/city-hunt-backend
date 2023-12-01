@@ -9,7 +9,7 @@ const express = require("express"),
 const config = require("./config.json");
 const router = require("./routes/router");
 
-global.io = require("socket.io")(http);
+global.io = require("socket.io")(http, {pingInterval: 10000, pingTimeout: 5000});
 
 mongoose.connect(config.db_url);
 mongoose.Promise = global.Promise;
