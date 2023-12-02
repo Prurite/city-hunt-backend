@@ -5,11 +5,12 @@ const Submission = require("../models/submission"),
 // Returns the list of checkpoints with submissions merged in
 exports.checkpoints = async function (req, res) {
   // Get all submissions of the user
-  const userSubmissions = await Submission.find({ uid: req.user.uid });
+  const userSubmissions = await Submission.find({ uid: req.user.uid }).lean();
 
-  // Merge submissions into the tasklist
-  const updatedCheckpoints = taskList.map(checkpoint => {
-    checkpoint.points = checkpoint.points.map(point => {
+  // Create a copy of the taskList and merge submissions into the tasklist
+  const copyTaskList = JSON.parse(JSON.stringify(taskList));
+  const updatedCheckpoints = copyTaskList.map(checkpointGroup => {
+    checkpointGroup.points = checkpointGroup.points.map(point => {
       const submission = userSubmissions.find(sub => sub.checkpointid === point.id);
       if (submission) {
         point.state = submission.state;
@@ -19,9 +20,10 @@ exports.checkpoints = async function (req, res) {
         if (submission.score)
           point.score = submission.score + (submission.bonus ? `(+${submission.bonus})` : '');
       }
+      point.passed = 0;
       return point;
     });
-    return checkpoint;
+    return checkpointGroup;
   });
 
   // Count the number of accepted submissions for each checkpoint
