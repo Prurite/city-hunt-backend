@@ -5,7 +5,8 @@ var Schema = mongoose.Schema;
 var AlertSchema = new Schema({
   uid: {type: String, required: true },
   date: {type: Date, required: true },
-  content: {type: String, required: true }
+  content: {type: String, required: true },
+  dismissed: {type: Boolean, default: false }
 })
 
 // Return the time in hh:mm:ss format
