@@ -21,6 +21,8 @@ exports.authenticateToken = function (req, res, next) {
         if (!user)
           return res.status(403).json({err_msg: "用户不存在"});
         req.user = user;
+        if (!config.event_running && user.type !== "admin")
+          return res.status(403).json({err_msg: "活动尚未开始"});
         next();
       })
       .catch(err => {

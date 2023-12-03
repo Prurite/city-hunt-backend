@@ -3,5 +3,6 @@
   "db_url": "mongodb://127.0.0.1:27017/cityhunt",
   "hostname": "127.0.0.1",
   "port": "3001",
-  "secret": "tSXt6Z6G7To6t0I2yGUCiLRHF00AIS3FlL6Igo7BwY4zYVvFxw"
+  "secret": "tSXt6Z6G7To6t0I2yGUCiLRHF00AIS3FlL6Igo7BwY4zYVvFxw",
+  "event_running": false
 }
