@@ -2,6 +2,10 @@ const Submission = require("../models/submission"),
       Alert = require("../models/alert"),
       taskList = require("../TaskList.json");
 
+const sharp = require('sharp'); // Image processing library
+const fs = require('fs');
+const path = require('path');
+
 // Returns the list of checkpoints with submissions merged in
 exports.checkpoints = async function (req, res) {
   // Get all submissions of the user
@@ -76,6 +80,7 @@ exports.checkpoint = async function (req, res) {
   res.json(checkpoint);
 }
 
+
 exports.submit = async function (req, res) {
   const checkpointid = req.body.checkpointid;
 
@@ -83,23 +88,40 @@ exports.submit = async function (req, res) {
   if (!req.files || !req.files.photo)
     return res.status(400).send({ err_msg: "未上传有效文件" });
 
-  // Extract photo information and generate a unique filename
   const photo = req.files.photo,
-    ext = photo.name.match(/\.([^\.]+)$/)[1],
-    id = `U${req.user.uid}-P${checkpointid}`,
-    now = new Date().toISOString(),
-    photoName = id + '-' + now + '.' + ext;
+        ext = photo.name.match(/\.([^\.]+)$/)[1].toLowerCase(),
+        id = `U${req.user.uid}-P${checkpointid}`,
+        now = new Date().toISOString().replace(/:/g, '-'), // Replace colons for valid filenames
+        photoName = id + '-' + now + '.jpg', // Save as JPEG
 
-  console.log(now);
+        uploadDir = './uploads/',
+        tempPath = path.join(uploadDir, 'temp-' + photo.name); // Temporary file path
 
-  // Check if the photo is valid
-  if (ext != "jpg" && ext != "jpeg")
+  // Validate file type and size
+  if (!['jpg', 'jpeg', 'png', 'heic'].includes(ext))
     return res.status(400).send({ err_msg: "无效的文件类型 " + ext });
-  if (photo.size > 10 * 1048576)
+  if (photo.size > 10 * 1048576) // 10MB limit
     return res.status(400).send({ err_msg: "文件大小超过 10MB" });
 
-  // Move the uploaded photo to the uploads folder
-  photo.mv("./uploads/" + photoName);
+  // Save the uploaded file temporarily
+  try {
+    await photo.mv(tempPath);
+
+    // Process the image using sharp
+    const processedPath = path.join(uploadDir, photoName);
+    await sharp(tempPath)
+      .resize({ width: 2000, withoutEnlargement: true }) // Resize to max width of 2000px, maintain aspect ratio
+      .jpeg({ quality: 90 }) // Convert to JPEG with quality 80
+      .toFile(processedPath);
+
+    // Clean up the temporary file
+    fs.unlinkSync(tempPath);
+
+    console.log('Image processed and saved as:', photoName);
+  } catch (err) {
+    console.error('Image processing error:', err);
+    return res.status(500).send({ err_msg: "图片处理失败" });
+  }
 
   // Delete any existing submissions with the same ID
   await Submission.deleteMany({ id: id });
