@@ -3,8 +3,9 @@ const Submission = require("../models/submission"),
       taskList = require("../TaskList.json");
 
 const sharp = require('sharp'); // Image processing library
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
+const heicConvert = require('heic-convert');
 
 // Returns the list of checkpoints with submissions merged in
 exports.checkpoints = async function (req, res) {
@@ -80,7 +81,6 @@ exports.checkpoint = async function (req, res) {
   res.json(checkpoint);
 }
 
-
 exports.submit = async function (req, res) {
   const checkpointid = req.body.checkpointid;
 
@@ -94,32 +94,63 @@ exports.submit = async function (req, res) {
         now = new Date().toISOString().replace(/:/g, '-'), // Replace colons for valid filenames
         photoName = id + '-' + now + '.jpg', // Save as JPEG
 
-        uploadDir = './uploads/',
-        tempPath = path.join(uploadDir, 'temp-' + photo.name); // Temporary file path
+        uploadDir = path.join(__dirname, '../uploads'),
+        tempPath = path.join(uploadDir, 'temp-' + photo.name),
+        processedPath = path.join(uploadDir, photoName);
 
   // Validate file type and size
-  if (!['jpg', 'jpeg', 'png', 'heic'].includes(ext))
+  if (!['jpg', 'jpeg', 'png', 'heic', 'heif'].includes(ext))
     return res.status(400).send({ err_msg: "无效的文件类型 " + ext });
   if (photo.size > 10 * 1048576) // 10MB limit
     return res.status(400).send({ err_msg: "文件大小超过 10MB" });
 
-  // Save the uploaded file temporarily
+  await photo.mv(tempPath);
+
   try {
-    await photo.mv(tempPath);
-
-    // Process the image using sharp
-    const processedPath = path.join(uploadDir, photoName);
-    await sharp(tempPath)
-      .resize({ width: 2000, withoutEnlargement: true }) // Resize to max width of 2000px, maintain aspect ratio
-      .jpeg({ quality: 90 }) // Convert to JPEG with quality 80
-      .toFile(processedPath);
-
-    // Clean up the temporary file
-    fs.unlinkSync(tempPath);
-
+    // Check if file is HEIC/HEIF
+    const fileExtension = path.extname(photo.name).toLowerCase();
+    const isHeic = ['.heic', '.heif'].includes(fileExtension);
+    
+    if (isHeic) {
+      // Read the HEIC file
+      const inputBuffer = await fs.readFile(tempPath);
+      
+      // Convert HEIC to JPEG buffer using heic-convert
+      const jpegBuffer = await heicConvert({
+        buffer: inputBuffer,
+        format: 'JPEG',      // output format
+        quality: 1           // maximum quality
+      });
+      
+      // Process the JPEG buffer with sharp for resizing
+      await sharp(jpegBuffer)
+        .resize({ width: 2000, withoutEnlargement: true })
+        .jpeg({ quality: 90 })
+        .toFile(processedPath);
+      
+      // Clean up temporary file
+      await fs.unlink(tempPath);
+    } else {
+      // For non-HEIC files, use sharp directly
+      await sharp(tempPath)
+        .resize({ width: 2000, withoutEnlargement: true })
+        .jpeg({ quality: 90 })
+        .toFile(processedPath);
+      
+      // Clean up the temporary file
+      await fs.unlink(tempPath);
+    }
+    
     console.log('Image processed and saved as:', photoName);
   } catch (err) {
     console.error('Image processing error:', err);
+    // Clean up any temporary files that might exist
+    try {
+      await fs.unlink(tempPath).catch(() => {});
+      // No need to clean up .jpg temp file since we're using buffers now
+    } catch (cleanupErr) {
+      console.error('Cleanup error:', cleanupErr);
+    }
     return res.status(500).send({ err_msg: "图片处理失败" });
   }
 
