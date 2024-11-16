@@ -16,3 +16,6 @@ def main():
         for row in reader:
             users.insert_one(row)
     print("Users imported successfully")
+
+if __name__ == "__main__":
+    main()
