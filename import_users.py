@@ -3,7 +3,7 @@
 # type can be "admin" or "user"
 
 import os, csv, json
-from pymango import MongoClient
+from pymongo import MongoClient
 
 def main():
     with open("config.json") as f:
